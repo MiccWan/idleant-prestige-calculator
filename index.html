@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Ant Prestige Calculator</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="./src/index.ts" type="module"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Idle Ant Prestige Calculator</h1>
+            <p>Paste your Idle Ant save data to calculate prestige timing</p>
+        </header>
+        
+        <main>
+            <div class="input-section">
+                <label for="saveData">Paste your Idle Ant Save Data:</label>
+                <textarea 
+                    id="saveData" 
+                    placeholder="Paste your save data here..."
+                    rows="10"
+                ></textarea>
+                <button id="calculateBtn">Calculate Prestige Time</button>
+            </div>
+            
+            <div class="results-section" id="results" style="display: none;">
+                <h2>Prestige Calculation Results</h2>
+                <div class="result-item">
+                    <span class="label">Estimated Time to Prestige:</span>
+                    <span class="value" id="prestigeTime">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Current Progress:</span>
+                    <span class="value" id="currentProgress">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">Recommended Actions:</span>
+                    <ul class="value" style="text-align: left;" id="recommendations">-</ul>
+                </div>
+            </div>
+        </main>
+        
+        <footer>
+            <p>Idle Ant Prestige Calculator v1.0.0</p>
+        </footer>
+    </div>
+</body>
+</html>
