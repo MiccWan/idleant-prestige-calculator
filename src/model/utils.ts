@@ -50,15 +50,17 @@ export class Utils {
       roots = [new Decimal(0)].concat(p.lessThan(0) ? [(p.times(-1)).sqrt(), (p.times(-1)).sqrt().times(-1)] : [])
     } else {
       const D = q.pow(2).div(4).plus(p.pow(3).div(27));
+      DEBUG && console.log(`q^2/4`, q.pow(2).div(4).toString());
+      DEBUG && console.log(`p^3/27`, p.pow(3).div(27).toString());
       DEBUG && console.log(`D: ${D.toString()}`);
-      // console.log("D: " + D.toString())
 
       if (D.abs().lessThan(Number.EPSILON)) {       // D = 0 -> two roots
         roots = [q.times(-1.5).div(p), new Decimal(3).times(q).times(p)]
       } else if (D.greaterThan(0)) {             // Only one real root
         // var u = cuberoot(-q/2 - Math.sqrt(D));
         // roots = [u - p/(3*u)];
-        const u = this.cuberoot(q.times(-0.5).minus(D.sqrt()))
+        // NOTE: We have two root here, choose the one without subtraction to avoid calculation error
+        const u = q.isNeg() ? this.cuberoot(q.times(-0.5).plus(D.sqrt())) : this.cuberoot(q.times(-0.5).minus(D.sqrt()))
         DEBUG && console.log(`u: ${u.toString()}`);
         roots = [u.minus(p.div(u.times(3)))]
       } else {                        // D < 0, three roots, but needs to use complex numbers/trigonometric solution

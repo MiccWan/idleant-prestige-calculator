@@ -76,7 +76,7 @@ class IdleAntCalculator {
       // Display results
       this.displayResults(results);
     } catch (error) {
-      console.error('Error calculating prestige:', error);
+      console.error(new Error('Error calculating prestige:', { cause: error }));
       // alert(`Error: ${(error as Error).message}`);
     } finally {
       // Reset button state
@@ -197,7 +197,7 @@ class IdleAntCalculator {
     this.prestigeTime.textContent = results.timeToPrestige.toString();
     // this.currentProgress.textContent = results.gol;
     this.recommendations.innerHTML = '';
-    for(const goal of results.goals) {
+    for (const goal of results.goals) {
       this.recommendations.appendChild(this.makeGoalList(goal));
     }
 
