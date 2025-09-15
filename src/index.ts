@@ -30,7 +30,7 @@ class IdleAntCalculator {
   private calculateBtn: HTMLButtonElement;
   private resultsSection: HTMLElement;
   private prestigeTime: HTMLElement;
-  private currentProgress: HTMLElement;
+  private bottleneck: HTMLElement;
   private recommendations: HTMLElement;
 
   constructor() {
@@ -44,7 +44,7 @@ class IdleAntCalculator {
     this.calculateBtn = document.getElementById('calculateBtn') as HTMLButtonElement;
     this.resultsSection = document.getElementById('results') as HTMLElement;
     this.prestigeTime = document.getElementById('prestigeTime') as HTMLElement;
-    this.currentProgress = document.getElementById('currentProgress') as HTMLElement;
+    this.bottleneck = document.getElementById('bottleneck') as HTMLElement;
     this.recommendations = document.getElementById('recommendations') as HTMLElement;
   }
 
@@ -211,15 +211,12 @@ class IdleAntCalculator {
   }
 
   private displayResults(results: PrestigeResults): void {
-    this.prestigeTime.textContent = results.timeToPrestige.toString();
-    // this.currentProgress.textContent = results.gol;
+    this.prestigeTime.textContent = secondsToString(results.timeToPrestige);
+    this.bottleneck.textContent = `${this.findBottleneck(results.goals)}`;
     this.recommendations.innerHTML = '';
     for (const goal of results.goals) {
       this.recommendations.appendChild(this.makeGoalList(goal));
     }
-    const $bottleneck = document.createElement('span');
-    $bottleneck.appendChild(document.createTextNode(`-> Bottleneck: ${this.findBottleneck(results.goals)}`));
-    this.recommendations.appendChild($bottleneck);
 
     this.resultsSection.style.display = 'block';
     this.resultsSection.scrollIntoView({ behavior: 'smooth' });
@@ -233,11 +230,11 @@ class IdleAntCalculator {
     for (const goal of goals) {
       if (goal.buyTime.gt(current.time)) {
         current.time = goal.buyTime;
-        current.msg = `Get ${goal.buyRequired} ${goal.name} first`;
+        current.msg = `+${goal.buyRequired} ${goal.name}`;
       }
       if (goal.twinTime.gt(current.time)) {
         current.time = goal.twinTime;
-        current.msg = `Get ${goal.twinRequired} ${goal.name} twins first`;
+        current.msg = `+${goal.twinRequired} ${goal.name} twins`;
       }
     }
     return current.msg;
