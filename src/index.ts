@@ -10,9 +10,14 @@ class Goal {
   name: string = "";
   twinRequired: Decimal = new Decimal(0);
   twinTotal: Decimal = new Decimal(0);
+  twinTime: Decimal = new Decimal(Number.POSITIVE_INFINITY);
   buyRequired: Decimal = new Decimal(0);
   buyTotal: Decimal = new Decimal(0);
-  timeToPrestige: Decimal = new Decimal(Number.POSITIVE_INFINITY);
+  buyTime: Decimal = new Decimal(Number.POSITIVE_INFINITY);
+
+  get timeToPrestige(): Decimal {
+    return Decimal.max(this.twinTime, this.buyTime);
+  }
 }
 
 interface PrestigeResults {
@@ -31,6 +36,7 @@ class IdleAntCalculator {
   constructor() {
     this.initializeElements();
     this.bindEvents();
+    this.loadSaveData();
   }
 
   private initializeElements(): void {
@@ -54,6 +60,14 @@ class IdleAntCalculator {
     });
   }
 
+  private loadSaveData(): void {
+    const saveData = localStorage.getItem('saveData');
+    if (saveData) {
+      this.saveDataTextarea.value = saveData;
+      this.calculatePrestige();
+    }
+  }
+
   private calculatePrestige(): void {
     const saveData = this.saveDataTextarea.value.trim();
 
@@ -75,6 +89,8 @@ class IdleAntCalculator {
 
       // Display results
       this.displayResults(results);
+
+      localStorage.setItem('saveData', saveData);
     } catch (error) {
       console.error(new Error('Error calculating prestige:', { cause: error }));
       // alert(`Error: ${(error as Error).message}`);
@@ -169,14 +185,15 @@ class IdleAntCalculator {
           bestSolution.buyTotal = currentBought.add(buyRequired);
           bestSolution.twinRequired = twinRequired;
           bestSolution.twinTotal = currentTwin.add(twinRequired);
-          bestSolution.timeToPrestige = timeToPrestige;
+          bestSolution.buyTime = buyTime;
+          bestSolution.twinTime = twinTime;
         }
         // console.groupEnd();
       }
     }
     else if (producedBy.length > 0) {
-      const time = this.calculateTimeToProduce(unit, basePrice);
-      bestSolution.timeToPrestige = time;
+      bestSolution.buyTime = this.calculateTimeToProduce(unit, basePrice);
+      bestSolution.twinTime = new Decimal(0);
     }
     return bestSolution;
   }
@@ -200,9 +217,30 @@ class IdleAntCalculator {
     for (const goal of results.goals) {
       this.recommendations.appendChild(this.makeGoalList(goal));
     }
+    const $bottleneck = document.createElement('span');
+    $bottleneck.appendChild(document.createTextNode(`-> Bottleneck: ${this.findBottleneck(results.goals)}`));
+    this.recommendations.appendChild($bottleneck);
 
     this.resultsSection.style.display = 'block';
     this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+  }
+
+  private findBottleneck(goals: Goal[]): string {
+    let current = {
+      time: new Decimal(0),
+      msg: '',
+    };
+    for (const goal of goals) {
+      if (goal.buyTime.gt(current.time)) {
+        current.time = goal.buyTime;
+        current.msg = `Get ${goal.buyRequired} ${goal.name} first`;
+      }
+      if (goal.twinTime.gt(current.time)) {
+        current.time = goal.twinTime;
+        current.msg = `Get ${goal.twinRequired} ${goal.name} twins first`;
+      }
+    }
+    return current.msg;
   }
 
   private makeGoalList(goal: Goal) {
