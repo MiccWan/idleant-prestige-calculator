@@ -6,6 +6,9 @@ import { Action, BuyAction } from "./model/units/action";
 import type { Unit } from "./model/units/unit";
 import { Utils } from "./model/utils";
 
+// Required for large number calculations
+Decimal.set({ precision: 100 });
+
 class Goal {
   name: string = "";
   twinRequired: Decimal = new Decimal(0);
@@ -170,25 +173,61 @@ class IdleAntCalculator {
     if (buyAction) {
       const currentBought = buyAction.quantity;
       const currentTwin = twinAction.quantity;
-      for (let twinRequired = new Decimal(0); twinRequired.lt(10); twinRequired = twinRequired.plus(1)) {
-        // console.group(`Suppose buying ${twinRequired} twins`);
+      // Binary search for optimal twin count
+      const maxTwins = new Decimal(80).minus(currentTwin);
+      let left = new Decimal(0);
+      let right = maxTwins;
+
+      const calculateTimeForTwins = (twinRequired: Decimal): { timeToPrestige: Decimal, buyRequired: Decimal, twinTime: Decimal, buyTime: Decimal } => {
         const twinMultiplier = currentTwin.add(twinRequired).add(1);
         const totalBought = basePrice.div(twinMultiplier).ceil();
         const buyRequired = totalBought.minus(currentBought);
         const twinTime = this.calculateTimeToBuy(game, twinAction, twinRequired);
         const buyTime = this.calculateTimeToBuy(game, buyAction, buyRequired);
-        // console.log(`To buy ${twinRequired} twin, costs: ${twinTime} seconds`);
-        // console.log(`To buy ${buyRequired} ${unit.name}, costs: ${buyTime} seconds`);
         const timeToPrestige = Decimal.max(twinTime, buyTime);
-        if (timeToPrestige.lt(bestSolution.timeToPrestige)) {
-          bestSolution.buyRequired = buyRequired;
-          bestSolution.buyTotal = currentBought.add(buyRequired);
-          bestSolution.twinRequired = twinRequired;
-          bestSolution.twinTotal = currentTwin.add(twinRequired);
-          bestSolution.buyTime = buyTime;
-          bestSolution.twinTime = twinTime;
+
+        return { timeToPrestige, buyRequired, twinTime, buyTime };
+      };
+
+      // Binary search
+      while (left.lte(right)) {
+        const mid = left.plus(right).div(2).floor();
+        const midPlus1 = mid.plus(1);
+
+        const midResult = calculateTimeForTwins(mid);
+        const midPlus1Result = midPlus1.lte(maxTwins) ? calculateTimeForTwins(midPlus1) : null;
+
+        // Update best solution if current mid is better
+        if (midResult.timeToPrestige.lt(bestSolution.timeToPrestige)) {
+          bestSolution.buyRequired = midResult.buyRequired;
+          bestSolution.buyTotal = currentBought.add(midResult.buyRequired);
+          bestSolution.twinRequired = mid;
+          bestSolution.twinTotal = currentTwin.add(mid);
+          bestSolution.buyTime = midResult.buyTime;
+          bestSolution.twinTime = midResult.twinTime;
         }
-        // console.groupEnd();
+
+        // Determine search direction
+        if (midPlus1Result && midPlus1Result.timeToPrestige.lt(midResult.timeToPrestige)) {
+          // Right side is better, search right
+          left = mid.plus(1);
+        } else if (mid.gt(0)) {
+          const midMinus1Result = calculateTimeForTwins(mid.minus(1));
+          if (midMinus1Result.timeToPrestige.lt(midResult.timeToPrestige)) {
+            // Left side is better, search left
+            right = mid.minus(1);
+          } else {
+            // Found local minimum
+            break;
+          }
+        } else {
+          // At left boundary, check if we should search right
+          if (midPlus1Result && midPlus1Result.timeToPrestige.lt(midResult.timeToPrestige)) {
+            left = mid.plus(1);
+          } else {
+            break;
+          }
+        }
       }
     }
     else if (producedBy.length > 0) {
@@ -245,9 +284,19 @@ class IdleAntCalculator {
     $li.appendChild(document.createTextNode(goal.name));
     const $ul = document.createElement('ul');
     $ul.innerHTML = `
-      <li>Buy: ${goal.buyTotal} (+${goal.buyRequired})</li>
-      <li>Twin: ${goal.twinTotal} (+${goal.twinRequired})</li>
-      <li>Time: ${secondsToString(goal.timeToPrestige)}</li>
+      <li>
+        Buy: 
+        <ul>
+          <li>${goal.buyTotal} (+${goal.buyRequired})</li>
+          <li>${secondsToString(goal.buyTime)}</li>
+        </ul>
+      </li>
+      <li>Twin:</li>
+        <ul>
+          <li>${goal.twinTotal} (+${goal.twinRequired})</li>
+          <li>${secondsToString(goal.twinTime)}</li>
+        </ul>
+      </li>
     `;
     $li.appendChild($ul);
     return $li;

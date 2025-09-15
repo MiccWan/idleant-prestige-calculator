@@ -1,5 +1,6 @@
 import { Decimal } from 'decimal.js';
 
+// const DEBUG = true;
 const DEBUG = false;
 
 export class Utils {
@@ -89,9 +90,11 @@ export class Utils {
 
         // const t = Math.acos(3 * q / p / u) / 3;  // D < 0 implies p < 0 and acos argument in [-1..1]
         const k = new Decimal(2).times(Math.PI).div(3)
-        roots = [u.times(Math.cos(t.toNumber())),
-        u.times(Math.cos(t.minus(k).toNumber())),
-        u.times(Math.cos(t.minus(k.times(2)).toNumber()))]
+        roots = [
+          u.times(Decimal.cos(t)),
+          u.times(Decimal.cos(t.minus(k))),
+          u.times(Decimal.cos(t.minus(k.times(2)))),
+        ]
 
         DEBUG && console.log(`acos: ${acos.toString()}`);
         DEBUG && console.log(`t: ${t.toString()}`);
